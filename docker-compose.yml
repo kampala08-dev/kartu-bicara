@@ -2,7 +2,8 @@
 # Pola sama dengan yamet-cs-latih: Docker Manager tidak menjalankan `build:`, jadi
 #   builder -> clone repo GitHub, salin file situs (index.html, data/, media/) ke volume `situs`, lalu selesai
 #   web     -> nginx menyajikan volume `situs` lewat Traefik (HTTPS Let's Encrypt)
-# Ambil versi terbaru dari GitHub = Restart project.
+# Ambil versi terbaru dari GitHub = Restart project. Bila repo dijadikan privat, clone gagal
+# dan situs tetap menyajikan versi terakhir yang sudah tersalin.
 # Tanda $ untuk shell ditulis $$ karena compose menafsirkan $ sebagai variabel.
 
 services:
@@ -16,7 +17,10 @@ services:
     command:
       - |
         rm -rf /tmp/repo
-        git clone --depth 1 --branch "$$KB_REPO_CABANG" "$$KB_REPO_URL" /tmp/repo
+        if ! git clone --depth 1 --branch "$$KB_REPO_CABANG" "$$KB_REPO_URL" /tmp/repo; then
+          if [ -d /situs/kini ]; then echo "Clone gagal (repo privat/tidak terjangkau): tetap pakai versi terakhir"; exit 0; fi
+          echo "Clone gagal dan belum ada versi tersimpan"; exit 1
+        fi
         rm -rf /situs/baru && mkdir -p /situs/baru
         cp -r /tmp/repo/index.html /tmp/repo/data /tmp/repo/media /situs/baru/
         rm -rf /situs/lama && { [ -d /situs/kini ] && mv /situs/kini /situs/lama || true; }
