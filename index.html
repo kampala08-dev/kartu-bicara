@@ -1,4 +1,4 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#FFE9A3"><link rel="manifest" href="data/manifest.json"><link rel="icon" href="data/ikon-192.png"><link rel="apple-touch-icon" href="data/ikon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"></head><body><title>Kartu Bicara</title>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#FFE9A3"><link rel="manifest" href="data/manifest.json"><link rel="icon" href="data/ikon-192.png"><link rel="apple-touch-icon" href="data/ikon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"></head><body><title>PECS YAMET Dempo</title>
 <meta name="description" content="Aplikasi komunikasi gambar (AAC) untuk anak, klinik Yamet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -723,7 +723,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
     <div id="screen"></div>
   </div>
 </div>
-<div id="narrow">Kartu Bicara dirancang untuk tablet dalam posisi mendatar. Di layar kecil tampilannya diperkecil.</div>
+<div id="narrow">PECS YAMET Dempo dirancang untuk tablet dalam posisi mendatar. Di layar kecil tampilannya diperkecil.</div>
 <script>
 /* Kartu Bicara — core: global KB namespace, card lookup, DOM helpers, router, sheet/toast, stage scaling.
    Owned by the foreman. Screen modules register themselves in KB.screens and must not edit this file. */
@@ -1199,7 +1199,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
   };
   // Restores a backup as a NEW child (never overwrites an existing one). Returns the new child.
   S.importChild = async (obj) => {
-    if (!obj || obj.format !== 'kartu-bicara-backup' || !obj.child || !obj.book) throw { code: 'invalid', message: 'File ini bukan cadangan Kartu Bicara.' };
+    if (!obj || obj.format !== 'kartu-bicara-backup' || !obj.child || !obj.book) throw { code: 'invalid', message: 'File ini bukan cadangan PECS YAMET Dempo.' };
     const id = KB.uid('c_');
     const child = Object.assign(KB.defaultChild(), obj.child, { createdAt: Date.now() }); delete child.id; delete child.contoh;
     child.name = (child.name || 'Anak') + ' (dipulihkan)';
@@ -2105,7 +2105,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
       function openAwal() {
         if (awalEl) return;
         if (S.phase !== 'idle') stopSpeech();
-        hold && holdStop(false); hideUndo();
+        hideUndo();
         awalReturn = document.activeElement;
         const n = leadN(S.strip), head = S.strip.slice(0, n);
         const keys = awalKeys();
@@ -3135,8 +3135,8 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
   }
   function parseBackup(text) {
     let obj;
-    try { obj = JSON.parse(text); } catch (e) { throw { message: 'Isi file bukan JSON yang valid. Pilih file cadangan Kartu Bicara (berakhiran .json).' }; }
-    if (!obj || typeof obj !== 'object' || obj.format !== 'kartu-bicara-backup') throw { message: 'File ini bukan cadangan Kartu Bicara.' };
+    try { obj = JSON.parse(text); } catch (e) { throw { message: 'Isi file bukan JSON yang valid. Pilih file cadangan PECS YAMET Dempo (berakhiran .json).' }; }
+    if (!obj || typeof obj !== 'object' || obj.format !== 'kartu-bicara-backup') throw { message: 'File ini bukan cadangan PECS YAMET Dempo.' };
     if (obj.v > 1) throw { message: 'Cadangan ini dibuat oleh versi aplikasi yang lebih baru dan belum bisa dibuka di sini.' };
     if (!obj.child || typeof obj.child !== 'object' || !obj.book || typeof obj.book !== 'object' || !Array.isArray(obj.book.tabs)) throw { message: 'File cadangan rusak: data anak atau buku kartunya tidak lengkap.' };
     if (obj.logs != null && !Array.isArray(obj.logs)) throw { message: 'File cadangan rusak: catatan pemakaiannya tidak terbaca.' };
@@ -3158,7 +3158,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
       if (!file) return;
       onStart && onStart();
       try {
-        if (file.size > 25 * 1024 * 1024) throw { message: 'File terlalu besar untuk cadangan Kartu Bicara (maksimal 25 MB).' };
+        if (file.size > 25 * 1024 * 1024) throw { message: 'File terlalu besar untuk cadangan PECS YAMET Dempo (maksimal 25 MB).' };
         const obj = parseBackup(await readFileText(file));
         const child = await KB.store.importChild(obj);
         await refreshChildren();
@@ -3257,7 +3257,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         scroll.innerHTML = '';
         const kids = KB.state.children;
         const inner = h('div', { class: 'lp-anak-in' });
-        inner.appendChild(h('h1', { class: 'rnd', text: 'Siapa yang memakai Kartu Bicara?' }));
+        inner.appendChild(h('h1', { class: 'rnd', text: 'Siapa yang memakai PECS YAMET Dempo?' }));
         if (kids.length) {
           const grid = h('div', { class: 'lp-kids' }, kids.map(kidTile));
           if (canEdit()) grid.appendChild(h('button', { type: 'button', class: 'lp-kid lp-kid-add', onclick: addChildSheet, 'aria-label': 'Tambah anak' },
@@ -3267,7 +3267,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
           inner.appendChild(h('div', { class: 'lp-empty lp-empty-anak' },
             h('span', { class: 'lp-empty-ico', 'aria-hidden': 'true' }, KB.ico('user', 34)),
             h('h2', { text: 'Belum ada anak' }),
-            h('p', { text: canEdit() ? 'Tambahkan anak pertama untuk mulai memakai Kartu Bicara. Setiap anak punya buku kartu, suara, dan laporannya sendiri.' : 'Belum ada profil anak di akun ini. Minta pengelola akun menambahkannya.' }),
+            h('p', { text: canEdit() ? 'Tambahkan anak pertama untuk mulai memakai PECS YAMET Dempo. Setiap anak punya buku kartu, suara, dan laporannya sendiri.' : 'Belum ada profil anak di akun ini. Minta pengelola akun menambahkannya.' }),
             canEdit() ? h('button', { type: 'button', class: 'btn btn-tint lp-btn', onclick: addChildSheet }, KB.ico('plus', 20), 'Tambah anak pertama') : null));
         }
         inner.appendChild(modeCard());
@@ -3570,7 +3570,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
           try {
             const obj = await KB.store.exportChild(child.id);
             const text = JSON.stringify(obj);
-            const fname = 'kartu-bicara-' + fileSafe(child.name) + '-' + KB.store.today() + '.json';
+            const fname = 'pecs-yamet-dempo-' + fileSafe(child.name) + '-' + KB.store.today() + '.json';
             const r = await KB.store.saveFile(fname, text);
             if (r === 'saved') KB.toast('Cadangan tersimpan: ' + fname, 3600);
             else if (r === 'declined') KB.toast('Penyimpanan cadangan dibatalkan. Ketuk lagi bila ingin menyimpannya.');
