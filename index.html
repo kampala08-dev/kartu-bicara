@@ -837,9 +837,12 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
   KB.PAGE_CAP = { s: 24, m: 15, l: 8 }; // suggested cards per page before a new page (pages still scroll if longer)
   KB.defaultBook = () => {
     const tabs = KB.data.defaultTabs.map((t) => {
-      const pages = []; const cap = KB.PAGE_CAP.m;
+      const one = t.id === 'f1'; // Fase I = pertukaran satu kartu (PECS), sama dengan template "Fase 1"
+      const pages = []; const cap = one ? 1 : KB.PAGE_CAP.m;
       for (let i = 0; i < t.members.length; i += cap) pages.push(t.members.slice(i, i + cap));
-      return { id: t.id, name: t.name, color: t.color, icon: t.icon, starters: t.starters || [], prompt: t.prompt || '', pages: pages.length ? pages : [[]] };
+      const tab = { id: t.id, name: t.name, color: t.color, icon: t.icon, starters: t.starters || [], prompt: t.prompt || '', pages: pages.length ? pages : [[]] };
+      if (one) tab.mode = 'single';
+      return tab;
     });
     return { v: 1, tabs, starters: ['saya_mau', 'saya_lihat', 'saya_dengar', 'saya_punya', 'cium', 'ada', 'saya', 'mau', 'lihat', 'dengar', 'punya'], custom: {}, labels: {}, updatedAt: Date.now() };
   };
