@@ -1,0 +1,61 @@
+# Kartu Bicara (pecs.yametpalembang.io) - project Docker "kartu-bicara" di VPS Hostinger.
+# Pola sama dengan yamet-cs-latih: Docker Manager tidak menjalankan `build:`, jadi
+#   builder -> clone repo GitHub, salin file situs (index.html, data/, media/) ke volume `situs`, lalu selesai
+#   web     -> nginx menyajikan volume `situs` lewat Traefik (HTTPS Let's Encrypt)
+# Ambil versi terbaru dari GitHub = Restart project.
+# Tanda $ untuk shell ditulis $$ karena compose menafsirkan $ sebagai variabel.
+
+services:
+  builder:
+    image: alpine/git:latest
+    restart: "no"
+    environment:
+      KB_REPO_URL: ${KB_REPO_URL:-https://github.com/kampala08-dev/kartu-bicara.git}
+      KB_REPO_CABANG: ${KB_REPO_CABANG:-main}
+    entrypoint: ["sh", "-euc"]
+    command:
+      - |
+        rm -rf /tmp/repo
+        git clone --depth 1 --branch "$$KB_REPO_CABANG" "$$KB_REPO_URL" /tmp/repo
+        rm -rf /situs/baru && mkdir -p /situs/baru
+        cp -r /tmp/repo/index.html /tmp/repo/data /tmp/repo/media /situs/baru/
+        rm -rf /situs/lama && { [ -d /situs/kini ] && mv /situs/kini /situs/lama || true; }
+        mv /situs/baru /situs/kini
+        echo "Salin selesai: $$(git -C /tmp/repo log -1 --format='%h %s')"
+    volumes:
+      - situs:/situs
+
+  web:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+    entrypoint: ["sh", "-euc"]
+    command:
+      - |
+        printf '%s\n' \
+          'server {' \
+          '  listen 80;' \
+          '  root /situs/kini;' \
+          '  index index.html;' \
+          '  location / { try_files $$uri $$uri/ /index.html; add_header Cache-Control "no-cache"; }' \
+          '  location /media/ { add_header Cache-Control "public, max-age=604800"; }' \
+          '}' > /etc/nginx/conf.d/default.conf
+        exec nginx -g 'daemon off;'
+    volumes:
+      - situs:/situs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kartu-bicara.rule=Host(`${KB_DOMAIN:-pecs.yametpalembang.io}`)"
+      - "traefik.http.routers.kartu-bicara.entrypoints=websecure"
+      - "traefik.http.routers.kartu-bicara.tls.certresolver=letsencrypt"
+      - "traefik.http.services.kartu-bicara.loadbalancer.server.port=80"
+
+volumes:
+  situs:
