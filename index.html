@@ -3646,6 +3646,13 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
     KB.boot().catch((e) => { console.error(e); document.getElementById('screen').textContent = 'Aplikasi gagal dimuat. Muat ulang halaman.'; });
   })();
 
+  /* Tekan lama/geser di Android memunculkan menu "Salin" (menu gambar, seleksi, seret bawaan). Seret kartu memakai pointer
+     events sendiri, jadi ketiganya dimatikan di seluruh dokumen, kecuali di kolom isian. */
+  ['contextmenu', 'selectstart', 'dragstart'].forEach((ev) => document.addEventListener(ev, (e) => {
+    const t = e.target.nodeType === 1 ? e.target : e.target.parentElement; // selectstart bisa menunjuk simpul teks
+    if (!(t && t.closest('input,textarea,select,[contenteditable]'))) e.preventDefault();
+  }));
+
   /* Layar penuh pada sentuhan pertama di tablet: baris alamat Chrome tak bisa disembunyikan dengan cara lain.
      Bila layar penuh ditutup (gestur kembali), sentuhan berikutnya memasangnya lagi. */
   (function () {
