@@ -38,7 +38,7 @@ button{font-family:inherit;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{margin:0;background:#F4E7A0;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;color:#1D1D1F}
 #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#EADB92}
-#stage{width:1194px;height:834px;flex:none;position:relative;overflow:hidden;transform-origin:center center;border-radius:18px;box-shadow:0 20px 60px rgba(70,55,0,.25)}
+#stage{width:1194px;height:834px;flex:none;position:relative;overflow:hidden;transform-origin:center center}
 #stage.wall{display:flex;flex-direction:column}
 #screen{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
 #narrow{display:none;position:fixed;left:0;right:0;bottom:0;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:#1D1D1F;color:#FFFFFF;font-size:13px;text-align:center;z-index:50}
@@ -947,6 +947,8 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
     const st = document.getElementById('stage'); if (!st) return;
     const vw = window.innerWidth, vh = window.innerHeight;
     const k = Math.min(vw / 1194, vh / 834);
+    // panggung melebar/memanjang mengikuti sisa layar supaya tak ada pinggiran kosong (tablet 16:10, mode tegak)
+    st.style.width = vw / k + 'px'; st.style.height = vh / k + 'px';
     st.style.transform = 'scale(' + k + ')';
     KB.scale = k;
   };
