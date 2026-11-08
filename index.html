@@ -1,4 +1,4 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#FFE9A3"></head><body><title>Kartu Bicara</title>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#FFE9A3"><link rel="manifest" href="data/manifest.json"><link rel="icon" href="data/ikon-192.png"><link rel="apple-touch-icon" href="data/ikon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"></head><body><title>Kartu Bicara</title>
 <meta name="description" content="Aplikasi komunikasi gambar (AAC) untuk anak, klinik Yamet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
@@ -3675,6 +3675,23 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
     const tick = () => { const d = new Date(); const c = document.getElementById('clock'); if (c) c.textContent = p(d.getHours()) + '.' + p(d.getMinutes()); };
     tick(); setInterval(tick, 30000);
     KB.boot().catch((e) => { console.error(e); document.getElementById('screen').textContent = 'Aplikasi gagal dimuat. Muat ulang halaman.'; });
+  })();
+
+  /* Layar penuh pada sentuhan pertama di tablet: baris alamat Chrome tak bisa disembunyikan dengan cara lain.
+     Bila layar penuh ditutup (gestur kembali), sentuhan berikutnya memasangnya lagi. */
+  (function () {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req || !matchMedia('(pointer: coarse)').matches || matchMedia('(display-mode: fullscreen)').matches) return;
+    const go = () => {
+      if (document.fullscreenElement || document.webkitFullscreenElement) return;
+      Promise.resolve(req.call(el, { navigationUI: 'hide' }))
+        .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+        .catch(() => {}); // ditolak peramban: tetap jalan seperti biasa
+    };
+    // pointerup sentuhan dan click sama-sama dihitung gestur pengguna; click menangkap stylus/mouse
+    document.addEventListener('pointerup', go, { passive: true });
+    document.addEventListener('click', go, { passive: true });
   })();
 </script>
 </body></html>
