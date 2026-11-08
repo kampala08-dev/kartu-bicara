@@ -40,6 +40,9 @@ body{margin:0;background:#F4E7A0;overflow:hidden;font-family:-apple-system,Blink
 #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:clip;background:#EADB92}
 #stage{width:1194px;height:834px;flex:none;position:relative;overflow:hidden;transform-origin:center center}
 #stage.wall{display:flex;flex-direction:column}
+#stage{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#stage input,#stage textarea,#stage select,#stage [contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+#stage img{-webkit-user-drag:none}
 #screen{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
 #narrow{display:none;position:fixed;left:0;right:0;bottom:0;padding:8px max(16px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:#1D1D1F;color:#FFFFFF;font-size:13px;text-align:center;z-index:50}
 @media (max-width:760px){#narrow{display:block}}
@@ -113,8 +116,6 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
 .km-urgsym .sym{background:transparent}
 .km-pend{position:relative;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
 .km-pendin{position:relative;display:flex;align-items:center;gap:8px}
-.km-fill{position:absolute;inset:0;background:rgba(31,122,55,.24);transform:scaleX(0);transform-origin:left;transition:transform .2s ease-out}
-.km-pend.holding .km-fill{transform:scaleX(1);transition:transform 1.5s linear}
 
 /* ---------- tab ---------- */
 .km-tabswrap{height:62px;flex:none;box-sizing:border-box;padding:0 20px;display:flex;align-items:center;justify-content:center}
@@ -288,7 +289,6 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
   .km-given{animation:kmArriveR .25s ease-out both}
   .km-wave span{animation:none;transform:scaleY(.7)}
   .km-prog{animation:none;transform:scaleX(1);opacity:.55}
-  .km-pend.holding .km-fill{transition:transform 1.5s steps(6,end)}
   .km-card,.km-chip,.km-pill,.km-urg,.km-clr,.km-pgbtn,.km-bicara,.km-dot i,.km-tab{transition:none}
   .km-card.km-armed,.km-scroll.km-drag .km-card:active,.km-scroll.km-drag .km-card.km-armed:active{transform:none}
   .km-bicara:active,.km-pill:active,.km-urg:active,.km-clr:active,.km-pgbtn:active,.km-awalan:active{transform:none}
@@ -1261,11 +1261,19 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
     opts = opts || {};
     A.stop();
     const run = runId;
+    // Awalan gabungan tanpa rekaman di suara ini (mis. saya_mau pada suara gadis) diputar per kata: saya + mau.
+    const B = KB.state.book || {};
+    const parts = (k) => {
+      const ps = k.split('_');
+      const own = (B.custom && B.custom[k]) || (B.labels && B.labels[k]);
+      return ps.length > 1 && !own && !A.clip(k) && ps.every(A.hasClip) ? ps : [k];
+    };
+    const seq = []; keys.forEach((k, slot) => parts(k).forEach((p) => seq.push([p, slot])));
     const step = (i) => {
       if (run !== runId) return;
-      if (i >= keys.length) { opts.after && opts.after(); return; }
-      opts.onStep && opts.onStep(i);
-      const key = keys[i];
+      if (i >= seq.length) { opts.after && opts.after(); return; }
+      if (!i || seq[i - 1][1] !== seq[i][1]) opts.onStep && opts.onStep(seq[i][1]);
+      const key = seq[i][0];
       const next = () => setTimeout(() => step(i + 1), 160);
       const cl = A.clip(key);
       const c = KB.card(key);
@@ -1297,11 +1305,11 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
    Mendaftarkan KB.screens.komunikasi. Selector CSS berawalan .km- (lihat css/komunikasi.css).
 
    Ringkasan perilaku:
-   - Bar atas: nama anak, tombol Awalan, kartu langsung (tanpa strip), tombol Pendamping (tahan 1,5 dtk -> KB.unlock -> panel).
+   - Bar atas: nama anak, tombol Awalan, kartu langsung (tanpa strip), tombol Pendamping (ketuk -> KB.unlock -> panel).
    - Tab dari book.tabs, halaman dari tab.pages (grid kartu yang bisa digulir, ‹ ›, titik, geser).
    - Strip kalimat child.stripSlots slot; awalan tab terpasang otomatis di depan strip.
    - Mode pilih child.select: tap | drag | both (default drag = pertukaran gambar ala PECS: kartu ditekan lalu diseret anak ke strip).
-     drag: ketuk hanya membacakan kata; seret langsung memunculkan kartu bayangan di bawah jari dan menempel ke slot saat dilepas
+     drag: ketuk tidak bersuara (petunjuk saja; suara hanya dari Bicara); seret langsung memunculkan kartu bayangan di bawah jari dan menempel ke slot saat dilepas
      di strip. Halaman yang muat layar: seret langsung ke arah mana pun. Halaman yang bisa digulir (ukuran besar / banyak kartu):
      tahan ±150 ms (kartu sedikit membesar + getar) sebelum diseret supaya gulir satu jari tetap jalan; Lihat lebih banyak dan
      tombol halaman selalu ada. Lepas di luar strip: kartu kembali; geseran horizontal sentuh = pindah halaman.
@@ -1326,7 +1334,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
   const STARTERS = ['saya', 'aku', 'mau', 'lihat', 'dengar', 'cium', 'punya', 'ada', 'suka', 'tidak_suka', 'saya_mau', 'saya_lihat', 'saya_dengar', 'saya_punya'];
   const NOPAUSE = ['penting', 'menolak', 'bantu_t', 'perasaan']; // kategori yang tidak diberi jeda
   const URGENT = ['sakit', 'toilet', 'tolong', 'istirahat'];     // kartu langsung seperti mockup
-  const HOLD_MS = 1500;
+  const SERET_HINT = 'Seret kartu ke strip, lalu tekan Bicara.';
   const ARM_MS = 150;     // tahan sebentar sebelum kartu bisa diseret, HANYA pada halaman yang bisa digulir (halaman muat layar: seret langsung)
   const MOVE_PX = 5;      // gerak minimal (mouse) sebelum dianggap seret/geser
   const TOUCH_PX = 9;     // sama untuk sentuhan; gerak jari < TAP_PX yang berakhir di luar strip tetap dihitung ketukan
@@ -1412,8 +1420,8 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
       const paintAwal = () => { const b = KB.state.book || {}; const k = (b.starters && b.starters[0]) || 'saya_mau'; awalPic.replaceChildren(KB.symEl(k, 78)); };
       paintAwal();
       const urgWrap = h('div', { class: 'km-urgs', role: 'group', 'aria-label': 'Kartu langsung, dibacakan tanpa masuk ke strip' });
-      const pend = h('button', { type: 'button', class: 'km-pill km-pend', 'aria-label': 'Pendamping. Tahan sebentar untuk membuka menu.' },
-        h('span', { class: 'km-fill', 'aria-hidden': 'true' }), h('span', { class: 'km-pendin' }, KB.ico('lock', 20), h('span', { text: 'Pendamping' })));
+      const pend = h('button', { type: 'button', class: 'km-pill km-pend', 'aria-label': 'Pendamping. Buka menu dengan kode kunci.' },
+        h('span', { class: 'km-pendin' }, KB.ico('lock', 20), h('span', { text: 'Pendamping' })));
       const top = h('header', { class: 'km-top' }, who, urgWrap, pend);
 
       const tabsEl = h('div', { class: 'km-tabs', role: 'tablist', 'aria-label': 'Bagian buku' });
@@ -1474,43 +1482,8 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         });
       }
 
-      /* ---------- tombol Pendamping (tahan 1,5 detik) ---------- */
-      let hold = null, lastInput = 0, holdFired = false;
-      const holdStart = () => {
-        if (hold || closeSheet) return;
-        holdFired = false;
-        pend.classList.add('holding');
-        const t = setTimeout(() => { timers.delete(t); hold = null; holdFired = true; pend.classList.remove('holding'); (KB.unlock || ((f) => f()))(() => { if (alive) openPanel(); }); }, HOLD_MS);
-        timers.add(t); hold = { t };
-      };
-      const holdStop = (hint) => {
-        if (!hold) return;
-        clearT(hold.t); hold = null; pend.classList.remove('holding');
-        if (hint) KB.toast('Tahan untuk membuka menu pendamping');
-      };
-      pend.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        lastInput = performance.now();
-        try { pend.setPointerCapture(e.pointerId); } catch (err) {}
-        holdStart();
-      });
-      pend.addEventListener('pointerup', () => holdStop(true));
-      pend.addEventListener('pointercancel', () => holdStop(false));
-      pend.addEventListener('pointerleave', () => holdStop(false));
-      pend.addEventListener('pointermove', (e) => {
-        if (!hold) return;
-        const r = pend.getBoundingClientRect();
-        if (e.clientX < r.left - 30 || e.clientX > r.right + 30 || e.clientY < r.top - 30 || e.clientY > r.bottom + 30) holdStop(false);
-      });
-      pend.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) { e.preventDefault(); lastInput = performance.now(); holdStart(); } });
-      pend.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); holdStop(true); } });
-      pend.addEventListener('blur', () => holdStop(false));
-      pend.addEventListener('contextmenu', (e) => e.preventDefault());
-      // Aktivasi tanpa pointer/keyboard (mis. pembaca layar) tidak membuka menu: kunci anak tetap berlaku.
-      pend.addEventListener('click', () => {
-        if (holdFired) { holdFired = false; return; } // tahan berhasil: klik susulan saat jari diangkat bukan ketukan singkat
-        if (performance.now() - lastInput > 800) KB.toast('Tahan untuk membuka menu pendamping');
-      });
+      /* ---------- tombol Pendamping: ketuk -> kode kunci (KB.unlock) -> panel ---------- */
+      pend.addEventListener('click', () => { if (!closeSheet) (KB.unlock || ((f) => f()))(() => { if (alive) openPanel(); }); });
 
       /* ---------- panel pendamping ---------- */
       function openPanel() {
@@ -1738,7 +1711,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
           const dims = { width: sg.sw + 'px', height: sg.sh + 'px' };
           if (!k) { track.appendChild(h('div', { class: 'km-slot km-empty' + (i === S.strip.length ? ' km-next' : ''), dataset: { slot: i }, style: dims })); continue; }
           const c = KB.card(k);
-          const chip = KB.cardEl(k, { px: sg.px, font: sg.font, attrs: { class: 'card km-chip' + (S.arrive === i ? ' arrive' + (S.arriveDrop ? ' drop' : '') : ''), 'aria-label': c.label + '. Ketuk untuk mendengar.', style: { width: '100%', height: '100%' }, onclick: () => speakChip(i),
+          const chip = KB.cardEl(k, { px: sg.px, font: sg.font, attrs: { class: 'card km-chip' + (S.arrive === i ? ' arrive' + (S.arriveDrop ? ' drop' : '') : ''), 'aria-label': c.label, style: { width: '100%', height: '100%' },
             onkeydown: (e) => { if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeAt(i); } } } });
           chip.dataset.i = String(i);
           const lb = chip.querySelector('.lbl'); if (lb) lb.classList.add('km-chiplbl');
@@ -1910,15 +1883,6 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         const tok = ++S.run;
         KB.audio.play([key], { after: () => { if (tok === S.run && alive) { /* selesai */ } } });
       }
-      function speakChip(i) {
-        const k = S.strip[i]; if (!k) return;
-        if (S.phase === 'wait') { skipWait(); return; }
-        if (busy()) return;
-        if (S.phase === 'done') toIdle();
-        const tok = ++S.run;
-        S.phase = 'speak'; S.speakIdx = i; paintPhase();
-        KB.audio.play([k], { after: () => { if (tok === S.run && alive) toIdle(); } });
-      }
 
       /* ---------- animasi terbang ---------- */
       function stageScale() { const R = stage.getBoundingClientRect(); return { R, k: R.width / stage.offsetWidth || 1 }; }
@@ -2026,14 +1990,14 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         lastG = null;
         activate(card, performance.now() - kbdAt < 600); // Enter/Spasi: pengguna keyboard tidak bisa menyeret
       }
-      // Kartu awalan (kolom kiri): ketuk = pilih/lepas awalan (mode ketuk, keduanya); mode seret: ketuk hanya membacakan, seret ke strip memasang awalan.
+      // Kartu awalan (kolom kiri): ketuk = pilih/lepas awalan (mode ketuk, keduanya); mode seret: ketuk hanya memberi petunjuk, seret ke strip memasang awalan.
       function activateStarter(card, viaKeyboard) {
         const key = card.dataset.key; if (!key) return;
         if (S.phase === 'done') toIdle();
         if (selMode() === 'drag' && !viaKeyboard) {
           if (busy()) return;
           card.classList.add('km-say'); later(() => card.classList.remove('km-say'), 900);
-          KB.audio.play([key]); return;
+          flash(SERET_HINT, 2600); return; // suara hanya dari tombol Bicara
         }
         pickAwal(card.classList.contains('km-aon') ? null : key);
       }
@@ -2054,9 +2018,9 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         if (single()) { exchange(card, key); return; }
         if (S.phase === 'done') toIdle();
         if (busy()) return;
-        if (selMode() === 'drag' && !viaKeyboard) { // hanya membacakan kata, tidak menambah
+        if (selMode() === 'drag' && !viaKeyboard) { // tidak menambah dan tidak bersuara
           card.classList.add('km-say'); later(() => card.classList.remove('km-say'), 900);
-          KB.audio.play([key]); return;
+          flash(SERET_HINT, 2600); return; // suara hanya dari tombol Bicara
         }
         add(key, card, card.getBoundingClientRect());
       }
