@@ -1444,7 +1444,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         asideList.replaceChildren(...(keys.length ? keys.map((k) => {
           const el = KB.cardEl(k, { px: 64, font: 15, attrs: { class: 'card km-card km-scard' } });
           el.style.width = '100%';
-          const on = head.length === 1 && head[0] === k;
+          const on = head.indexOf(k) >= 0;
           if (on) el.classList.add('km-aon');
           el.setAttribute('aria-pressed', on ? 'true' : 'false');
           return el; // ketuk / seret ditangani bersama kartu buku (bindGestures di bawah)
@@ -1999,15 +1999,17 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
           card.classList.add('km-say'); later(() => card.classList.remove('km-say'), 900);
           flash(SERET_HINT, 2600); return; // suara hanya dari tombol Bicara
         }
-        pickAwal(card.classList.contains('km-aon') ? null : key);
+        pickAwal(key); // awalan yang sudah terpasang dilepas oleh nextHead
       }
       function dropStarter(key, card, rect) {
         if (S.phase === 'done') toIdle();
         if (busy()) return false;
-        const n = leadN(S.strip);
-        if (n === 0 && S.strip.length >= slots()) { feedbackFull(); return false; }
+        const n = leadN(S.strip), head = S.strip.slice(0, n);
+        if (head.indexOf(key) >= 0) return false; // sudah terpasang: kartu kembali ke kolom
+        const nh = nextHead(head, key);
+        if (nh.length > n && nh.length + S.strip.length - n > slots()) { feedbackFull(); return false; }
         hideUndo();
-        S.strip = [key].concat(S.strip.slice(n)); S.arrive = 0; S.arriveDrop = true;
+        S.strip = nh.concat(S.strip.slice(n)); S.arrive = nh.indexOf(key); S.arriveDrop = true;
         clearT(arriveT); arriveT = later(() => { S.arrive = -1; }, 700);
         renderStrip(); fly(card, rect, 0, true);
         return true;
@@ -2112,7 +2114,7 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         const cards = keys.length ? h('div', { class: 'km-awgrid' }, keys.map((k) => {
           const el = KB.cardEl(k, { px: 124, font: 24, attrs: { class: 'card km-card km-acard' } });
           el.style.width = '100%';
-          if (head.length === 1 && head[0] === k) { el.classList.add('km-aon'); el.setAttribute('aria-pressed', 'true'); }
+          if (head.indexOf(k) >= 0) { el.classList.add('km-aon'); el.setAttribute('aria-pressed', 'true'); }
           el.addEventListener('click', () => pickAwal(k));
           return el;
         })) : h('div', { class: 'km-emptypg' }, h('p', { text: 'Belum ada kartu awalan. Tambahkan di Edit kartu.' }));
@@ -2133,13 +2135,23 @@ textarea.field{padding:10px 12px;min-height:120px;width:100%}
         [top, tabsWrap, main, dock].forEach((el) => { el.inert = false; });
         try { awalReturn && awalReturn.isConnected && awalReturn.focus(); } catch (e) {}
       }
-      // Pilih awalan: gantikan awalan di depan strip, atau isi slot pertama. null = lepas awalan.
+      // Awalan bisa sampai 2 kartu ("saya" + "mau"). Kartu gabungan ("saya mau") menggantikan semuanya;
+      // memilih awalan yang sudah terpasang melepasnya; awalan ke-3 menggantikan yang kedua.
+      const AWAL_MAX = 2;
+      const isCombo = (k) => labelOf(k).trim().split(/\s+/).length > 1; // label dua kata, mis. "saya mau"
+      function nextHead(head, key) {
+        if (!key) return [];
+        if (head.indexOf(key) >= 0) return head.filter((k) => k !== key);
+        if (isCombo(key) || head.some(isCombo)) return [key];
+        return head.slice(0, AWAL_MAX - 1).concat(key);
+      }
+      // Pilih awalan: tambah/lepas awalan di depan strip (lihat nextHead). null = lepas semua awalan.
       function pickAwal(key) {
-        const n = leadN(S.strip);
-        if (key && n === 0 && S.strip.length >= slots()) { closeAwal(); feedbackFull(); return; }
+        const n = leadN(S.strip), nh = nextHead(S.strip.slice(0, n), key);
+        if (nh.length > n && nh.length + S.strip.length - n > slots()) { closeAwal(); feedbackFull(); return; }
         hideUndo();
-        S.strip = (key ? [key] : []).concat(S.strip.slice(n));
-        S.arrive = key ? 0 : -1;
+        S.strip = nh.concat(S.strip.slice(n));
+        S.arrive = key && nh.indexOf(key) >= 0 ? nh.indexOf(key) : -1;
         clearT(arriveT); arriveT = later(() => { S.arrive = -1; }, 700);
         closeAwal(); renderStrip();
       }
